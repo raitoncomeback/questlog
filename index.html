@@ -349,9 +349,10 @@ const LADDER = {
 
 const MULT = [[30,2.0],[14,1.5],[7,1.25],[3,1.1]]; // streak-day -> multiplier
 
-/* ---------- date helpers ---------- */
-const today = ()=> new Date().toISOString().slice(0,10);
-function yesterdayOf(d){ const t=new Date(d+"T00:00"); t.setDate(t.getDate()-1); return t.toISOString().slice(0,10); }
+/* ---------- date helpers (local time, not UTC) ---------- */
+function fmt(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+const today = ()=> fmt(new Date());
+function yesterdayOf(d){ const t=new Date(d+"T00:00"); t.setDate(t.getDate()-1); return fmt(t); }
 function daysBetween(a,b){ return Math.round((new Date(b+"T00:00")-new Date(a+"T00:00"))/86400000); }
 
 /* ---------- state ---------- */
