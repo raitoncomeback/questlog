@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0D1117">
+<title>QuestLog</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧙</text></svg>">
+</head>
+<body>
+<div class="bokeh" id="bokeh"></div>
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="glass hero pad" id="hero"></div>
+
+  <!-- VIEW: TODAY -->
+  <div class="view active" id="view-today">
+    <div class="sec-title"><h2>Daily Quests</h2><span class="eyebrow" id="qdate"></span></div>
+    <div id="quests"></div>
+
+    <div class="sec-title"><h2>Today's Tasks</h2>
+      <button class="btn-primary" onclick="openTask()">+ New Quest</button></div>
+    <div class="tabs" id="tabs"></div>
+    <div id="tasklist"></div>
+  </div>
+
+  <!-- VIEW: SKILLS -->
+  <div class="view" id="view-skills">
+    <div class="sec-title"><h2>Skills</h2><span class="eyebrow">Level up your goals</span></div>
+    <div id="skilllist"></div>
+
+    <div class="sec-title"><h2>Job Pipeline</h2><span class="eyebrow">closer every day</span></div>
+    <div class="glass pad" id="funnel"></div>
+
+    <div class="sec-title"><h2>Resume Projects</h2>
+      <button class="btn-ghost" onclick="addProject()">+ Project</button></div>
+    <div id="projlist"></div>
+  </div>
+
+  <!-- VIEW: MAP -->
+  <div class="view" id="view-map">
+    <div class="sec-title"><h2>World Map</h2><span class="eyebrow" id="mapmonth"></span></div>
+    <div class="glass pad">
+      <div class="heat" id="heathead"></div>
+      <div class="heat" id="heat"></div>
+      <div class="xpmeta" style="margin-top:12px">
+        <span id="conquered"></span><span id="beststreak"></span>
+      </div>
+    </div>
+
+    <div class="sec-title"><h2>Stats</h2></div>
+    <div class="glass pad" id="stats"></div>
+    <div style="text-align:center;margin-top:24px">
+      <a class="reset" href="#" onclick="exportData();return false">Export backup</a>
+      &nbsp;·&nbsp;
+      <a class="reset" href="#" onclick="document.getElementById('importFile').click();return false">Import backup</a>
+      &nbsp;·&nbsp;
+      <a class="reset" href="#" onclick="openSettings();return false">Settings</a>
+      &nbsp;·&nbsp;
+      <a class="reset" href="#" onclick="hardReset();return false">Reset everything</a>
+      <input type="file" id="importFile" accept="application/json,.json" style="display:none" onchange="importData(event)">
+    </div>
+  </div>
+
+</div>
+
+<!-- NAV -->
+<div class="nav" id="nav"></div>
+
+<!-- TASK MODAL -->
+<div class="scrim" id="taskModal">
+  <div class="glass modal pad">
+    <h3 style="margin:0 0 4px;font-size:.9rem" id="taskModalTitle">New Quest</h3>
+    <label>Task</label>
+    <input id="f-title" placeholder="e.g. Apply to 3 backend roles" autocomplete="off">
+    <label>Skill</label>
+    <select id="f-skill"></select>
+    <label>Difficulty</label>
+    <div class="difseg" id="f-dif"></div>
+    <div id="f-funnelwrap" style="display:none">
+      <label>Counts toward pipeline (optional)</label>
+      <select id="f-funnel">
+        <option value="">— none —</option>
+        <option value="applications">Application sent</option>
+        <option value="responses">Got a response</option>
+        <option value="interviews">Interview</option>
+        <option value="offers">Offer</option>
+      </select>
+    </div>
+    <label>Notes (optional)</label>
+    <textarea id="f-notes" placeholder="Any detail..."></textarea>
+    <div class="mfoot">
+      <button class="btn-ghost" onclick="closeModal('taskModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveTask()">Add Quest</button>
+    </div>
+  </div>
+</div>
+
+<!-- LEVELUP MODAL -->
+<div class="scrim" id="luModal">
+  <div class="glass modal levelup" id="luBody"></div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="scrim" id="settingsModal">
+  <div class="glass modal pad">
+    <h3 style="margin:0 0 4px;font-size:.9rem">Settings</h3>
+    <div class="settings-row">
+      <label>Adventurer Name</label>
+      <input id="s-name" placeholder="Your name">
+    </div>
+    <div class="settings-row">
+      <label>OpenRouter API Key (Feature 3)</label>
+      <input id="s-apikey" type="password" placeholder="sk-or-...">
+      <div class="hint">For AI task suggestions. Stored in your Supabase account.</div>
+    </div>
+    <div class="settings-row">
+      <div class="row">
+        <button class="btn-ghost" onclick="closeModal('settingsModal')">Cancel</button>
+        <button class="btn-primary" onclick="saveSettings()">Save</button>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:12px">
+      <a class="reset" href="#" onclick="closeModal('settingsModal');openProfile();return false">Back to Profile</a>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH SCREEN -->
+<div class="auth-screen" id="authScreen">
+  <div class="auth-box" id="authBox"></div>
+</div>
+
+<!-- PROFILE MODAL -->
+<div class="scrim" id="profileModal">
+  <div class="glass modal pad" id="profileBody"></div>
+</div>
+
+<!-- MIGRATION PROMPT -->
+<div class="scrim" id="migrateModal">
+  <div class="glass modal pad migrate-box" id="migrateBody"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Supabase SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
+<!-- App Config (gitignored — fill in your credentials) -->
+<script src="config.js"></script>
+<!-- Modules -->
+<script src="db.js"></script>
+<script src="ai.js"></script>
+<!-- Main App -->
+<script src="app.js"></script>
+</body>
+</html>
