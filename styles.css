@@ -995,6 +995,8 @@ body::before {
   padding: 20px;
   width: 100%; max-width: 440px;
   animation: modalIn 0.25s cubic-bezier(0.2,0.9,0.3,1);
+  overflow: hidden;
+  box-sizing: border-box;
 }
 @keyframes modalIn {
   from { transform: translateY(20px); opacity: 0; }
@@ -1069,9 +1071,12 @@ body::before {
   background: rgba(0,0,0,0.3); border: 1px solid var(--line);
   color: var(--text); font-family: inherit; font-size: 0.92rem;
   transition: border-color 0.15s ease; color-scheme: dark;
-  box-sizing: border-box;
+  box-sizing: border-box; max-width: 100%;
 }
 .date-input:focus { border-color: rgba(168,85,247,0.5); outline: none; }
+@media (max-width: 480px) {
+  .date-input { padding: 10px 8px; font-size: 0.85rem; }
+}
 #f-dif {
   display: grid; grid-template-columns: repeat(4,1fr); gap: 6px;
 }
