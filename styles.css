@@ -324,7 +324,13 @@ body::before {
   display: flex; align-items: center; gap: 5px;
   font-size: 0.60rem; text-transform: uppercase;
   letter-spacing: 0.06em; color: var(--muted);
+  flex-wrap: wrap;
 }
+.task-repeat, .task-due {
+  font-size: 0.56rem; padding: 2px 6px; border-radius: 4px;
+  background: rgba(168,85,247,0.15); color: #A855F7;
+}
+.task-due { background: rgba(59,130,246,0.15); color: #3B82F6; }
 .dot { width: 3px; height: 3px; border-radius: 50%; background: var(--faint); }
 .task-chk {
   width: 30px; height: 30px; border-radius: 50%;
@@ -1058,6 +1064,13 @@ body::before {
 }
 .modal textarea { resize: vertical; min-height: 54px; }
 .emoji-input { width: 80px !important; text-align: center; font-size: 1.4rem; }
+.date-input {
+  width: 100%; padding: 11px 12px; border-radius: 11px;
+  background: rgba(0,0,0,0.3); border: 1px solid var(--line);
+  color: var(--text); font-family: inherit; font-size: 0.92rem;
+  transition: border-color 0.15s ease; color-scheme: dark;
+}
+.date-input:focus { border-color: rgba(168,85,247,0.5); outline: none; }
 #f-dif {
   display: grid; grid-template-columns: repeat(4,1fr); gap: 6px;
 }

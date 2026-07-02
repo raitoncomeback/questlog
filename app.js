@@ -29,6 +29,21 @@ function fmt(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,
 const today = ()=> fmt(new Date());
 function yesterdayOf(d){ const t=new Date(d+"T00:00"); t.setDate(t.getDate()-1); return fmt(t); }
 function daysBetween(a,b){ return Math.round((new Date(b+"T00:00")-new Date(a+"T00:00"))/86400000); }
+function addDays(d,n){ const t=new Date(d+"T00:00"); t.setDate(t.getDate()+n); return fmt(t); }
+function nextRepeatDue(d,repeat){
+  const t=new Date(d+"T00:00");
+  if(repeat==="daily") return addDays(d,1);
+  if(repeat==="weekend"){
+    const dow=t.getDay();
+    if(dow===0) return addDays(d,6);
+    if(dow===6) return addDays(d,7);
+    return addDays(d,6-dow);
+  }
+  if(repeat==="weekly") return addDays(d,7);
+  if(repeat==="monthly"){ t.setMonth(t.getMonth()+1); return fmt(t); }
+  return d;
+}
+const REPEAT_LABELS={daily:"Daily",weekend:"Weekend",weekly:"Weekly",monthly:"Monthly"};
 
 /* ---------- state ---------- */
 const BLANK = ()=>({
@@ -50,6 +65,7 @@ let S = dbLoad() || BLANK();
 if(!S.reflections) S.reflections = [];
 if(!S.customSkills) S.customSkills = [];
 if(!S.deletedSkills) S.deletedSkills = [];
+if(!S.apiKey) S.apiKey = "";
 if(!S.apiKey) S.apiKey = "";
 
 /* ---------- custom skills ---------- */
@@ -129,6 +145,14 @@ function weakestSkill(){
   const skills=allSkills();
   return skills.slice().sort((a,b)=>(S.skills[a.id]?.xp||0)-(S.skills[b.id]?.xp||0))[0];
 }
+function promoteUpcoming(){
+  const d=today();
+  let changed=false;
+  S.tasks.forEach(t=>{
+    if(t.status==="active"&&t.due&&t.due<=d){ changed=true; }
+  });
+  if(changed) dbSave(S);
+}
 function ensureQuests(){
   if(S.quests.date===today()) return;
   const w=weakestSkill();
@@ -168,6 +192,14 @@ function completeTask(id, ev){
   t.status="completed"; t.completedAt=today();
   S.totalXP+=gained;
   S.skills[t.skill].xp+=gained;
+
+  if(t.repeat){
+    const nextDue=nextRepeatDue(t.due||today(),t.repeat);
+    const next={id:uid(),title:t.title,skill:t.skill,difficulty:t.difficulty,
+      notes:t.notes,funnel:t.funnel,status:"active",createdAt:today(),
+      due:nextDue,repeat:t.repeat};
+    S.tasks.unshift(next);
+  }
 
   const d=today();
   S.days[d]=(S.days[d]||0)+1;
@@ -372,9 +404,14 @@ function renderTodayCount(){
 }
 
 function renderFilterTabs(){
-  const counts={active:0,completed:0,failed:0};
-  S.tasks.forEach(t=>counts[t.status]++);
-  const tabs=[["active","Active",counts.active],["completed","Done",counts.completed],["failed","Failed",counts.failed]];
+  const d=today();
+  let upcoming=0,active=0,completed=0,failed=0;
+  S.tasks.forEach(t=>{
+    if(t.status==="active"){ if(t.due&&t.due>d) upcoming++; else active++; }
+    else if(t.status==="completed") completed++;
+    else if(t.status==="failed") failed++;
+  });
+  const tabs=[["active","Active",active],["upcoming","Upcoming",upcoming],["completed","Done",completed],["failed","Failed",failed]];
   document.getElementById("filter-tabs").innerHTML=tabs.map(([k,l,c])=>
     `<button class="filter-tab ${S.filter===k?'active':''}" onclick="setFilter('${k}')">${l}${c?` (${c})`:''}</button>`
   ).join("");
@@ -384,8 +421,14 @@ function setFilter(f){ S.filter=f; save(); renderFilterTabs(); renderTasks(); }
 function renderTasks(){
   const d=today();
   S.tasks.forEach(t=>{ if(t.status==="active"&&t.due&&t.due<d){ t.status="failed"; } });
-  const list=S.tasks.filter(t=>t.status===S.filter)
-    .sort((a,b)=>(b.createdAt||"").localeCompare(a.createdAt||""));
+  let list;
+  if(S.filter==="upcoming"){
+    list=S.tasks.filter(t=>t.status==="active"&&t.due&&t.due>d)
+      .sort((a,b)=>(a.due||"").localeCompare(b.due||""));
+  } else {
+    list=S.tasks.filter(t=>t.status===S.filter)
+      .sort((a,b)=>(b.createdAt||"").localeCompare(a.createdAt||""));
+  }
   const el=document.getElementById("tasklist");
   if(!list.length){
     el.innerHTML=`<div class="empty-state">No ${S.filter} quests.</div>`;
@@ -396,7 +439,9 @@ function renderTasks(){
     const xp=DIFF[t.difficulty].xp;
     const isDone=t.status!=="active";
     const doneCls=isDone?" task-done":"";
-    const swipeAttr=t.status==="active"?` data-id="${t.id}"`:"";
+    const swipeAttr=t.status==="active"||S.filter==="upcoming"?` data-id="${t.id}"`:"";
+    const repeatTag=t.repeat?`<span class="task-repeat">\u{1F501} ${REPEAT_LABELS[t.repeat]}</span>`:"";
+    const dueTag=(t.status==="active"&&t.due&&t.due>d)?`<span class="task-due">\u{1F4C5} ${t.due}</span>`:"";
     return `<div class="task-wrap"${swipeAttr}>
       <div class="task-delete-bg">\u{1F5D1}</div>
       <div class="task-card${doneCls}">
@@ -409,6 +454,7 @@ function renderTasks(){
             <span style="color:${dc.color}">${t.difficulty}</span>
             <span class="dot"></span>
             <span>+${xp} XP</span>
+            ${repeatTag}${dueTag}
           </div>
         </div>
         ${t.status==="active"
@@ -417,7 +463,7 @@ function renderTasks(){
       </div>
     </div>`;
   }).join("");
-  if(S.filter==="active") attachSwipeHandlers();
+  if(S.filter==="active"||S.filter==="upcoming") attachSwipeHandlers();
 }
 
 function attachSwipeHandlers(){
@@ -1115,9 +1161,13 @@ function openTask(){
   buildDifSeg();
   document.getElementById("f-title").value="";
   document.getElementById("f-notes").value="";
+  document.getElementById("f-due").value=today();
   document.getElementById("f-funnel").dataset.value="";
   document.getElementById("f-funnel").querySelector(".cselect-selected").innerHTML="\u2014 none \u2014";
   document.getElementById("f-funnel").querySelectorAll(".cselect-opt").forEach(o=>o.classList.remove("selected"));
+  document.getElementById("f-repeat").dataset.value="";
+  document.getElementById("f-repeat").querySelector(".cselect-selected").innerHTML="\u2014 none \u2014";
+  document.getElementById("f-repeat").querySelectorAll(".cselect-opt").forEach(o=>o.classList.remove("selected"));
   onSkillChange();
   document.getElementById("taskModal").classList.add("show");
   setTimeout(()=>document.getElementById("f-title").focus(),50);
@@ -1143,10 +1193,12 @@ function saveTask(){
   const title=document.getElementById("f-title").value.trim();
   if(!title){ toast("Give your quest a name."); return; }
   const skill=document.getElementById("f-skill").dataset.value;
+  const due=document.getElementById("f-due").value||today();
+  const repeat=document.getElementById("f-repeat").dataset.value||null;
   const t={id:uid(),title,skill,difficulty:chosenDif,
     notes:document.getElementById("f-notes").value.trim(),
     funnel: skill==="jobhunt"?document.getElementById("f-funnel").dataset.value:"",
-    status:"active",createdAt:today(),due:today()};
+    status:"active",createdAt:today(),due,repeat};
   S.tasks.unshift(t); dbSave(S);
   closeModal("taskModal");
   S.filter="active"; renderAll();
@@ -1268,6 +1320,7 @@ function firstRun(){
 /* ---------- Boot ---------- */
 document.getElementById("fab").onclick=openTask;
 initCSelect(document.getElementById("f-funnel"));
+initCSelect(document.getElementById("f-repeat"));
 
 document.getElementById("modal-cancel").onclick=()=>closeModal("taskModal");
 document.getElementById("modal-save").onclick=saveTask;
@@ -1277,6 +1330,7 @@ document.querySelectorAll(".nav-btn").forEach(b=>{
 document.getElementById("map-analytics-btn").innerHTML=`<button class="analytics-pill" onclick="openSkillModal()">\u2795 Add Skill</button> <button class="analytics-pill" onclick="openAnalytics()">\u{1F4CA} Analytics</button>`;
 document.getElementById("analytics-header").innerHTML=`<button class="drill-back" onclick="closeAnalytics()">\u2190</button><span style="font-weight:800">Analytics</span>`;
 
+promoteUpcoming();
 ensureQuests();
 firstRun();
 goView("today");
