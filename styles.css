@@ -1069,6 +1069,7 @@ body::before {
   background: rgba(0,0,0,0.3); border: 1px solid var(--line);
   color: var(--text); font-family: inherit; font-size: 0.92rem;
   transition: border-color 0.15s ease; color-scheme: dark;
+  box-sizing: border-box;
 }
 .date-input:focus { border-color: rgba(168,85,247,0.5); outline: none; }
 #f-dif {
