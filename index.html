@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuestLog</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- XP Rail -->
+  <div id="xp-rail"><div id="xp-fill"></div></div>
+
+  <div class="wrap">
+
+    <!-- Masthead -->
+    <div id="masthead">
+      <div id="mast-left">
+        <div id="mast-name" onclick="editName()" style="cursor:pointer"></div>
+        <div id="mast-level"></div>
+      </div>
+      <div id="mast-right">
+        <div id="mast-streak"></div>
+      </div>
+    </div>
+    <div id="mast-xp"></div>
+
+    <!-- VIEW: TODAY -->
+    <div class="view active" id="view-today">
+
+      <!-- Quest Progress Bars -->
+      <div id="quest-bars">
+        <div id="quest-bar-row"></div>
+        <span id="quest-bar-label"></span>
+      </div>
+      <div id="quest-detail"></div>
+
+      <!-- Streak Warning Strip -->
+      <div id="warn-strip"></div>
+
+      <!-- Today Count Hero -->
+      <div id="today-count"></div>
+
+      <!-- Filter Tabs -->
+      <div class="filter-tabs" id="filter-tabs"></div>
+
+      <!-- Task List -->
+      <div id="tasklist"></div>
+
+    </div>
+
+    <!-- VIEW: SKILLS -->
+    <div class="view" id="view-skills">
+
+      <!-- 2x3 Tile Grid -->
+      <div id="skill-grid"></div>
+
+      <!-- Skill Drill-down Panel -->
+      <div id="skill-drill">
+        <div id="skill-drill-header"></div>
+        <div id="skill-drill-body"></div>
+      </div>
+
+      <!-- Job Pipeline -->
+      <div id="pipeline"></div>
+
+      <!-- Resume Projects -->
+      <div class="sec-title"><h2>Resume Projects</h2>
+        <button class="btn-ghost" onclick="addProject()">+ Project</button></div>
+      <div id="projects"></div>
+
+    </div>
+
+    <!-- VIEW: MAP -->
+    <div class="view" id="view-map">
+
+      <!-- Analytics Button -->
+      <div id="map-analytics-btn"></div>
+
+      <!-- Heatmap -->
+      <div id="heatmap"></div>
+
+      <!-- Stats Grid -->
+      <div id="stats-grid"></div>
+
+      <!-- Export / Import / Reset -->
+      <div id="data-mgmt"></div>
+
+      <!-- Analytics Panel (slides in) -->
+      <div id="analytics-panel">
+        <div id="analytics-header"></div>
+        <div id="analytics-body"></div>
+      </div>
+
+    </div>
+
+    <!-- VIEW: REFLECT -->
+    <div class="view" id="view-reflect">
+
+      <!-- Masthead (reused) -->
+      <div id="reflect-masthead">
+        <div id="reflect-mast-left"></div>
+        <div id="reflect-mast-right"></div>
+      </div>
+
+      <!-- Mood Selector -->
+      <div id="mood-selector"></div>
+
+      <!-- Energy Bars -->
+      <div id="energy-bars"></div>
+
+      <!-- Note Input -->
+      <div id="reflect-note"></div>
+
+      <!-- Submit Button -->
+      <div id="reflect-submit"></div>
+
+    </div>
+
+  </div>
+
+  <!-- FAB -->
+  <button id="fab" class="hidden">+</button>
+
+  <!-- Nav Pill -->
+  <div id="nav-wrap">
+    <div id="nav-pill">
+      <button class="nav-btn active" data-v="today">
+        <span class="ni">⚔️</span>Today
+      </button>
+      <button class="nav-btn" data-v="skills">
+        <span class="ni">⭐</span>Skills
+      </button>
+      <button class="nav-btn" data-v="map">
+        <span class="ni">🗺️</span>Map
+      </button>
+      <button class="nav-btn" data-v="reflect">
+        <span class="ni">🌙</span>Reflect
+      </button>
+    </div>
+  </div>
+
+  <!-- Task Modal -->
+  <div class="scrim" id="taskModal">
+    <div class="modal">
+      <h3 id="taskModalTitle">New Quest</h3>
+      <label for="f-title">Task</label>
+      <input id="f-title" type="text" placeholder="e.g. Apply to 3 backend roles" autocomplete="off">
+      <label for="f-skill">Skill</label>
+      <div class="cselect" id="f-skill" data-value=""></div>
+      <label>Difficulty</label>
+      <div id="f-dif"></div>
+      <div id="f-funnelwrap" class="hidden">
+        <label for="f-funnel">Counts toward pipeline (optional)</label>
+        <div class="cselect" id="f-funnel" data-value="">
+          <div class="cselect-selected">\u2014 none \u2014</div>
+          <div class="cselect-options">
+            <div class="cselect-opt" data-value="">\u2014 none \u2014</div>
+            <div class="cselect-opt" data-value="applications">Application sent</div>
+            <div class="cselect-opt" data-value="responses">Got a response</div>
+            <div class="cselect-opt" data-value="interviews">Interview</div>
+            <div class="cselect-opt" data-value="offers">Offer</div>
+          </div>
+        </div>
+      </div>
+      <label for="f-notes">Notes (optional)</label>
+      <textarea id="f-notes" placeholder="Any detail..."></textarea>
+      <div id="modal-foot">
+        <button id="modal-cancel" class="btn-ghost">Cancel</button>
+        <button id="modal-save" class="btn-primary">Add Quest</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Level-up Modal -->
+  <div class="scrim" id="luModal">
+    <div class="modal levelup" id="luBody"></div>
+  </div>
+
+  <!-- Add Skill Modal -->
+  <div class="scrim" id="skillModal">
+    <div class="modal">
+      <h3>Add Custom Skill</h3>
+      <label for="cs-name">Skill Name</label>
+      <input id="cs-name" type="text" placeholder="e.g. Cooking" autocomplete="off" maxlength="24">
+      <label for="cs-emoji">Emoji</label>
+      <input id="cs-emoji" type="text" placeholder="e.g. 🍳" maxlength="4" class="emoji-input">
+      <div id="modal-foot">
+        <button class="btn-ghost" onclick="closeModal('skillModal')">Cancel</button>
+        <button class="btn-primary" onclick="saveCustomSkill()">Add Skill</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="db.js"></script>
+  <script src="ai.js"></script>
+  <script src="app.js"></script>
+
+</body>
+</html>
